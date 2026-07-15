@@ -38,6 +38,20 @@ jobs:
             echo "platform :ios, '12.0'" > ios/Podfile
           fi
 
+      - name: Patch volume_controller for Flutter 3.29+
+        run: |
+          VC_DIR="$HOME/.pub-cache/hosted/pub.dev/volume_controller-3.4.4/ios/volume_controller/Sources/volume_controller"
+          SWIFT_FILE="$VC_DIR/VolumeControllerPlugin.swift"
+          if [ -f "$SWIFT_FILE" ]; then
+            # Remove addSceneDelegate call
+            sed -i '' '/registrar.addSceneDelegate/d' "$SWIFT_FILE"
+            # Remove FlutterSceneLifeCycleDelegate extension block
+            sed -i '' '/@available(iOS 13.0, \*)/,/^}/d' "$SWIFT_FILE"
+            echo "Patched volume_controller"
+          else
+            echo "volume_controller Swift file not found, skipping patch"
+          fi
+
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: |
           cd ios
