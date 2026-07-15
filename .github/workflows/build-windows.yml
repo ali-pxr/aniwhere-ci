@@ -27,7 +27,8 @@ jobs:
         run: |
           git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
           cd C:\temp\git-crypt-src
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && cl.exe /EHsc /O2 /std:c++17 /Fe:git-crypt.exe git-crypt.cpp gpg.cpp sha1.cpp sha256.cpp sha512.cpp hmac.cpp aes-ctr.cpp aead.cpp key.cpp base64.cpp util.cpp commands.cpp
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
+          call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat" && cl.exe /EHsc /O2 /std:c++17 /Fe:git-crypt.exe git-crypt.cpp gpg.cpp sha1.cpp sha256.cpp sha512.cpp hmac.cpp aes-ctr.cpp aead.cpp key.cpp base64.cpp util.cpp commands.cpp
           if exist git-crypt.exe (
             mkdir "C:\Program Files\git-crypt" 2>nul
             move git-crypt.exe "C:\Program Files\git-crypt\git-crypt.exe"
@@ -45,9 +46,9 @@ jobs:
         run: |
           $firstLine = Get-Content lib\main.dart -TotalCount 1
           if ($firstLine -match "import") {
-            Write-Host "✅ Source decrypted successfully"
+            Write-Host "Source decrypted successfully"
           } else {
-            Write-Host "❌ Decryption failed"
+            Write-Host "Decryption failed"
             exit 1
           }
 
