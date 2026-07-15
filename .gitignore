@@ -1,0 +1,5 @@
+# Don't need source code here — only workflows
+*
+!.gitignore
+!.github/
+!README.md
