@@ -19,11 +19,6 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - run: sudo apt-get update && sudo apt-get install -y git-crypt
-      - run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -66,11 +61,6 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - run: sudo apt-get update && sudo apt-get install -y git-crypt
-      - run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ github.event.inputs.flutter_version }}
@@ -101,24 +91,6 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - name: Setup git-crypt
-        shell: cmd
-        run: |
-          git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
-          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
-          call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat"
-          cd C:\temp\git-crypt-src
-          cl.exe /EHsc /O2 /std:c++17 /Fe:git-crypt.exe git-crypt.cpp gpg.cpp sha1.cpp sha256.cpp sha512.cpp hmac.cpp aes-ctr.cpp aead.cpp key.cpp base64.cpp util.cpp commands.cpp
-          if exist git-crypt.exe (
-            mkdir "C:\Program Files\git-crypt" 2>nul
-            move git-crypt.exe "C:\Program Files\git-crypt\git-crypt.exe"
-            echo C:\Program Files\git-crypt>> %GITHUB_PATH%
-          )
-      - run: |
-          $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")
-          [IO.File]::WriteAllBytes("C:\temp\key.bin", $bytes)
-          git-crypt unlock "C:\temp\key.bin"
-          Remove-Item "C:\temp\key.bin"
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ github.event.inputs.flutter_version }}
@@ -144,11 +116,6 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - run: brew install git-crypt
-      - run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ github.event.inputs.flutter_version }}
@@ -185,11 +152,6 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - run: brew install git-crypt
-      - run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ github.event.inputs.flutter_version }}
