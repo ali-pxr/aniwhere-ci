@@ -22,57 +22,25 @@ jobs:
           token: ${{ secrets.PAT }}
           fetch-depth: 0
 
-      - name: Install git-crypt
-        run: sudo apt-get update && sudo apt-get install -y git-crypt
-
-      - name: Unlock encrypted source
-        run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
-
-      - name: Verify decryption
-        run: |
-          if head -1 lib/main.dart | grep -q "import"; then
-            echo "✅ Source decrypted successfully"
-          else
-            echo "❌ Decryption failed"
-            exit 1
-          fi
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
-      - name: Install Linux dependencies
-        run: |
+      - run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libmpv-dev mpv \
-            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev \
-            libsoup-3.0-dev libjson-glib-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libmpv-dev mpv libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libjson-glib-dev
 
-      - name: Get dependencies
-        run: flutter pub get
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build linux --release --no-tree-shake-icons
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Build Linux
-        run: flutter build linux --release --no-tree-shake-icons
-
-      - name: Package artifact
-        run: |
+      - run: |
           cd build/linux/x64/release/bundle
           tar -czf /tmp/aniwhere-linux-x64.tar.gz .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: aniwhere-linux-x64
           path: /tmp/aniwhere-linux-x64.tar.gz
