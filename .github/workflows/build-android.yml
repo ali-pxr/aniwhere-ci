@@ -36,14 +36,19 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Fix isar_flutter_libs namespace
+      - name: Fix isar_flutter_libs namespace and compileSdk
         run: |
           ISAR_DIR="$HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-3.1.0+1/android"
           BUILD_FILE="$ISAR_DIR/build.gradle"
           if [ -f "$BUILD_FILE" ]; then
+            # Add namespace for AGP 8.x
             if ! grep -q "namespace" "$BUILD_FILE"; then
               sed -i '/android {/a\    namespace "io.isar.isar_flutter_libs"' "$BUILD_FILE"
             fi
+            # Fix compileSdk to at least 34
+            sed -i 's/compileSdk [0-9]*/compileSdk 34/' "$BUILD_FILE"
+            # Also ensure minSdk is set
+            sed -i 's/minSdk [0-9]*/minSdk 21/' "$BUILD_FILE"
           fi
           MANIFEST_FILE="$ISAR_DIR/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_FILE" ]; then
