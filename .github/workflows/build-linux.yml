@@ -36,6 +36,34 @@ jobs:
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter build linux --release --no-tree-shake-icons
 
+      # flutter_js Issue #105: libquickjs_c_bridge_plugin.so gets installed
+      # in the wrong subdirectory (plugins/flutter_js/bundle/lib/) instead of
+      # the main bundle/lib/. Copy it to the correct location.
+      - name: Fix flutter_js native library location
+        run: |
+          BUNDLE_LIB="build/linux/x64/release/bundle/lib"
+          QUICKJS_SO="libquickjs_c_bridge_plugin.so"
+          if [ ! -f "$BUNDLE_LIB/$QUICKJS_SO" ]; then
+            echo "⚠️  $QUICKJS_SO not in bundle/lib — searching plugin dirs…"
+            FOUND=$(find build/linux/x64/release -name "$QUICKJS_SO" -type f 2>/dev/null | head -1)
+            if [ -n "$FOUND" ]; then
+              cp -v "$FOUND" "$BUNDLE_LIB/"
+              echo "✅ Copied $FOUND -> $BUNDLE_LIB/"
+            else
+              CACHE_SO=$(find .dart_tool -name "$QUICKJS_SO" -type f 2>/dev/null | head -1)
+              if [ -n "$CACHE_SO" ]; then
+                cp -v "$CACHE_SO" "$BUNDLE_LIB/"
+                echo "✅ Copied from cache: $CACHE_SO -> $BUNDLE_LIB/"
+              else
+                echo "❌ CRITICAL: $QUICKJS_SO not found anywhere — extensions will not work!"
+                exit 1
+              fi
+            fi
+          else
+            echo "✅ $QUICKJS_SO already in bundle/lib/"
+          fi
+          ls -la "$BUNDLE_LIB/$QUICKJS_SO"
+
       - run: |
           cd build/linux/x64/release/bundle
           tar -czf /tmp/aniwhere-linux-x64.tar.gz .
