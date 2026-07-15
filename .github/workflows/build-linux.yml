@@ -30,7 +30,7 @@ jobs:
 
       - run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libmpv-dev mpv libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libjson-glib-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libmpv-dev mpv libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libjson-glib-dev libasound2-plugins alsa-utils
 
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
@@ -63,6 +63,23 @@ jobs:
             echo "✅ $QUICKJS_SO already in bundle/lib/"
           fi
           ls -la "$BUNDLE_LIB/$QUICKJS_SO"
+
+      # Bundle ALSA plugins so the volume_controller and mpv don't segfault
+      # on systems where libasound_module_ctl_null.so is missing.
+      - name: Bundle ALSA plugins
+        run: |
+          BUNDLE_LIB="build/linux/x64/release/bundle/lib"
+          ALSA_DIR="$BUNDLE_LIB/alsa-lib"
+          mkdir -p "$ALSA_DIR"
+          # Copy ALSA plugins from the build system (Ubuntu runner)
+          SYS_ALSA="/usr/lib/x86_64-linux-gnu/alsa-lib"
+          if [ -d "$SYS_ALSA" ]; then
+            cp -v "$SYS_ALSA"/*.so "$ALSA_DIR/" 2>/dev/null || true
+            echo "✅ Bundled $(ls "$ALSA_DIR"/*.so 2>/dev/null | wc -l) ALSA plugins"
+          else
+            echo "⚠️  System ALSA plugins not found at $SYS_ALSA"
+          fi
+          ls -la "$ALSA_DIR/" 2>/dev/null || echo "No ALSA plugins bundled"
 
       - run: |
           cd build/linux/x64/release/bundle
