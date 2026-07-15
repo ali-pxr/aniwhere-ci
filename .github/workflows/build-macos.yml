@@ -68,7 +68,7 @@ jobs:
           pod install || true
 
       - name: Build macOS
-        run: flutter build macos --release
+        run: flutter build macos --release --no-tree-shake-icons
 
       - name: Package artifact
         run: |
