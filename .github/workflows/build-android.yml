@@ -60,12 +60,22 @@ jobs:
       - name: Fix isar_flutter_libs namespace
         run: |
           # Fix namespace issue for isar_flutter_libs with AGP 8.x
-          ISAR_BUILD_FILE="$HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-3.1.0+1/android/build.gradle"
-          if [ -f "$ISAR_BUILD_FILE" ]; then
-            if ! grep -q "namespace" "$ISAR_BUILD_FILE"; then
-              sed -i '/android {/a\    namespace \"io.isar.isar_flutter_libs\"' "$ISAR_BUILD_FILE"
-              echo "✅ Added namespace to isar_flutter_libs"
+          ISAR_DIR="$HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-3.1.0+1/android"
+          
+          # Add namespace to build.gradle
+          BUILD_FILE="$ISAR_DIR/build.gradle"
+          if [ -f "$BUILD_FILE" ]; then
+            if ! grep -q "namespace" "$BUILD_FILE"; then
+              sed -i '/android {/a\    namespace "io.isar.isar_flutter_libs"' "$BUILD_FILE"
+              echo "Added namespace to build.gradle"
             fi
+          fi
+          
+          # Remove package from AndroidManifest.xml (AGP 8.x requirement)
+          MANIFEST_FILE="$ISAR_DIR/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_FILE" ]; then
+            sed -i 's/package="[^"]*"//' "$MANIFEST_FILE"
+            echo "Removed package from AndroidManifest.xml"
           fi
 
       - name: Generate code
