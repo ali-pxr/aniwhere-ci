@@ -98,16 +98,16 @@ jobs:
           token: ${{ secrets.PAT }}
           fetch-depth: 0
       - name: Setup git-crypt
+        shell: cmd
         run: |
           git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
           cd C:\temp\git-crypt-src
-          make CXX="cl.exe" PREFIX="C:\Program Files\git-crypt"
-          $installDir = "C:\Program Files\git-crypt"
-          New-Item -ItemType Directory -Force -Path $installDir
-          if (Test-Path "git-crypt.exe") {
-            Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
-          }
-          Add-Content $env:GITHUB_PATH "$installDir"
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && cl.exe /EHsc /O2 /std:c++17 /Fe:git-crypt.exe git-crypt.cpp gpg.cpp sha1.cpp sha256.cpp sha512.cpp hmac.cpp aes-ctr.cpp aead.cpp key.cpp base64.cpp util.cpp commands.cpp
+          if exist git-crypt.exe (
+            mkdir "C:\Program Files\git-crypt" 2>nul
+            move git-crypt.exe "C:\Program Files\git-crypt\git-crypt.exe"
+            echo C:\Program Files\git-crypt>> %GITHUB_PATH%
+          )
       - run: |
           $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")
           [IO.File]::WriteAllBytes("C:\temp\key.bin", $bytes)
