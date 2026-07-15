@@ -50,8 +50,22 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Set minimum macOS deployment target
+        run: |
+          # Set minimum deployment target to 10.15 for all pods
+          sed -i '' 's/platform :osx, .*/platform :osx, '\''10.15'\''/' macos/Podfile
+          # Also set in Podfile if not present
+          if ! grep -q "platform :osx" macos/Podfile; then
+            echo "platform :osx, '10.15'" >> macos/Podfile
+          fi
+
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Install CocoaPods
+        run: |
+          cd macos
+          pod install || true
 
       - name: Build macOS
         run: flutter build macos --release

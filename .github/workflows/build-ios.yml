@@ -50,6 +50,15 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Set minimum iOS deployment target
+        run: |
+          # Set minimum deployment target to 12.0 for all pods
+          if [ -f ios/Podfile ]; then
+            sed -i '' 's/platform :ios, .*/platform :ios, '\''12.0'\''/' ios/Podfile
+          else
+            echo "platform :ios, '12.0'" > ios/Podfile
+          fi
+
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
 

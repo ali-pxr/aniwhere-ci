@@ -53,7 +53,9 @@ jobs:
           sudo apt-get install -y \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libmpv-dev mpv
+            libmpv-dev mpv \
+            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev libjson-glib-dev
 
       - name: Get dependencies
         run: flutter pub get
