@@ -22,63 +22,35 @@ jobs:
           token: ${{ secrets.PAT }}
           fetch-depth: 0
 
-      - name: Install git-crypt
-        run: brew install git-crypt
-
-      - name: Unlock encrypted source
-        run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
-
-      - name: Verify decryption
-        run: |
-          if head -1 lib/main.dart | grep -q "import"; then
-            echo "✅ Source decrypted successfully"
-          else
-            echo "❌ Decryption failed"
-            exit 1
-          fi
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
-      - name: Get dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
       - name: Set minimum iOS deployment target
         run: |
-          # Set minimum deployment target to 12.0 for all pods
           if [ -f ios/Podfile ]; then
             sed -i '' 's/platform :ios, .*/platform :ios, '\''12.0'\''/' ios/Podfile
           else
             echo "platform :ios, '12.0'" > ios/Podfile
           fi
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Install CocoaPods
-        run: |
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: |
           cd ios
           pod install || true
+      - run: flutter build ios --release --no-codesign
 
-      - name: Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
-
-      - name: Package IPA
-        run: |
+      - run: |
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
           zip -r /tmp/aniwhere-ios.ipa Payload/
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: aniwhere-ios
           path: /tmp/aniwhere-ios.ipa
