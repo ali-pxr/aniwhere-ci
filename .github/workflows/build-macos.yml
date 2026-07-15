@@ -1,0 +1,69 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+        with:
+          repository: ali-pxr/aniwhere
+          token: ${{ secrets.PAT }}
+          fetch-depth: 0
+
+      - name: Install git-crypt
+        run: brew install git-crypt
+
+      - name: Unlock encrypted source
+        run: |
+          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
+          git-crypt unlock /tmp/key.bin
+          rm -f /tmp/key.bin
+
+      - name: Verify decryption
+        run: |
+          if head -1 lib/main.dart | grep -q "import"; then
+            echo "✅ Source decrypted successfully"
+          else
+            echo "❌ Decryption failed"
+            exit 1
+          fi
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Package artifact
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r /tmp/aniwhere-macos.zip aniwhere.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aniwhere-macos
+          path: /tmp/aniwhere-macos.zip
+          retention-days: 14

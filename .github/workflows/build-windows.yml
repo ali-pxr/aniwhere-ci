@@ -1,0 +1,69 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+        with:
+          repository: ali-pxr/aniwhere
+          token: ${{ secrets.PAT }}
+          fetch-depth: 0
+
+      - name: Setup git-crypt
+        run: choco install git-crypt
+
+      - name: Unlock encrypted source
+        run: |
+          $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")
+          [IO.File]::WriteAllBytes("C:\temp\key.bin", $bytes)
+          git-crypt unlock "C:\temp\key.bin"
+          Remove-Item "C:\temp\key.bin"
+
+      - name: Verify decryption
+        run: |
+          $firstLine = Get-Content lib\main.dart -TotalCount 1
+          if ($firstLine -match "import") {
+            Write-Host "✅ Source decrypted successfully"
+          } else {
+            Write-Host "❌ Decryption failed"
+            exit 1
+          }
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Package artifact
+        run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "aniwhere-windows-x64.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aniwhere-windows-x64
+          path: aniwhere-windows-x64.zip
+          retention-days: 14
