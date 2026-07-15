@@ -182,7 +182,7 @@ jobs:
       - run: |
           cd ios
           pod install || true
-      - run: flutter build ios --release --no-codesign
+      - run: flutter build ios --release --no-codesign --no-tree-shake-icons
       - run: |
           cd build/ios/iphoneos
           mkdir -p Payload
