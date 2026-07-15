@@ -22,81 +22,39 @@ jobs:
           token: ${{ secrets.PAT }}
           fetch-depth: 0
 
-      - name: Install git-crypt
-        run: sudo apt-get update && sudo apt-get install -y git-crypt
-
-      - name: Unlock encrypted source
-        run: |
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > /tmp/key.bin
-          git-crypt unlock /tmp/key.bin
-          rm -f /tmp/key.bin
-
-      - name: Verify decryption
-        run: |
-          if head -1 lib/main.dart | grep -q "import"; then
-            echo "✅ Source decrypted successfully"
-          else
-            echo "❌ Decryption failed"
-            exit 1
-          fi
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
-      - name: Get dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
       - name: Fix isar_flutter_libs namespace
         run: |
-          # Fix namespace issue for isar_flutter_libs with AGP 8.x
           ISAR_DIR="$HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-3.1.0+1/android"
-          
-          # Add namespace to build.gradle
           BUILD_FILE="$ISAR_DIR/build.gradle"
           if [ -f "$BUILD_FILE" ]; then
             if ! grep -q "namespace" "$BUILD_FILE"; then
               sed -i '/android {/a\    namespace "io.isar.isar_flutter_libs"' "$BUILD_FILE"
-              echo "Added namespace to build.gradle"
             fi
           fi
-          
-          # Remove package from AndroidManifest.xml (AGP 8.x requirement)
           MANIFEST_FILE="$ISAR_DIR/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_FILE" ]; then
             sed -i 's/package="[^"]*"//' "$MANIFEST_FILE"
-            echo "Removed package from AndroidManifest.xml"
           fi
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
-
-      - name: Build App Bundle
-        run: flutter build appbundle --release --no-tree-shake-icons
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: aniwhere-android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: aniwhere-android-aab
-          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
