@@ -99,10 +99,14 @@ jobs:
           fetch-depth: 0
       - name: Setup git-crypt
         run: |
-          Invoke-WebRequest -Uri "https://github.com/oholovko/git-crypt-windows/releases/download/0.7.1/git-crypt.exe" -OutFile "git-crypt.exe"
+          git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
+          cd C:\temp\git-crypt-src
+          make CXX="cl.exe" PREFIX="C:\Program Files\git-crypt"
           $installDir = "C:\Program Files\git-crypt"
           New-Item -ItemType Directory -Force -Path $installDir
-          Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          if (Test-Path "git-crypt.exe") {
+            Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          }
           Add-Content $env:GITHUB_PATH "$installDir"
       - run: |
           $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")

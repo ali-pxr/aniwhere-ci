@@ -24,13 +24,17 @@ jobs:
 
       - name: Setup git-crypt
         run: |
-          # Download pre-built git-crypt binary for Windows
-          Invoke-WebRequest -Uri "https://github.com/oholovko/git-crypt-windows/releases/download/0.7.1/git-crypt.exe" -OutFile "git-crypt.exe"
+          # Build git-crypt from source on Windows
+          git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
+          cd C:\temp\git-crypt-src
+          make CXX="cl.exe" PREFIX="C:\Program Files\git-crypt"
           $installDir = "C:\Program Files\git-crypt"
           New-Item -ItemType Directory -Force -Path $installDir
-          Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          if (Test-Path "git-crypt.exe") {
+            Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          }
           Add-Content $env:GITHUB_PATH "$installDir"
-          Write-Host "git-crypt installed to $installDir"
+          git-crypt --version
 
       - name: Unlock encrypted source
         run: |
