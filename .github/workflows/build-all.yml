@@ -88,7 +88,13 @@ jobs:
           repository: ali-pxr/aniwhere
           token: ${{ secrets.PAT }}
           fetch-depth: 0
-      - run: choco install git-crypt
+      - name: Setup git-crypt
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/oholovko/git-crypt-windows/releases/download/0.7.1/git-crypt.exe" -OutFile "git-crypt.exe"
+          $installDir = "C:\Program Files\git-crypt"
+          New-Item -ItemType Directory -Force -Path $installDir
+          Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          Add-Content $env:GITHUB_PATH "$installDir"
       - run: |
           $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")
           [IO.File]::WriteAllBytes("C:\temp\key.bin", $bytes)

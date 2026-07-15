@@ -23,7 +23,14 @@ jobs:
           fetch-depth: 0
 
       - name: Setup git-crypt
-        run: choco install git-crypt
+        run: |
+          # Download pre-built git-crypt binary for Windows
+          Invoke-WebRequest -Uri "https://github.com/oholovko/git-crypt-windows/releases/download/0.7.1/git-crypt.exe" -OutFile "git-crypt.exe"
+          $installDir = "C:\Program Files\git-crypt"
+          New-Item -ItemType Directory -Force -Path $installDir
+          Move-Item "git-crypt.exe" "$installDir\git-crypt.exe"
+          Add-Content $env:GITHUB_PATH "$installDir"
+          Write-Host "git-crypt installed to $installDir"
 
       - name: Unlock encrypted source
         run: |
