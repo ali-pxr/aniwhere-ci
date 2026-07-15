@@ -22,58 +22,19 @@ jobs:
           token: ${{ secrets.PAT }}
           fetch-depth: 0
 
-      - name: Setup git-crypt
-        shell: cmd
-        run: |
-          git clone https://github.com/AGWA/git-crypt.git C:\temp\git-crypt-src
-          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
-          call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat"
-          cd C:\temp\git-crypt-src
-          cl.exe /EHsc /O2 /std:c++17 /Fe:git-crypt.exe git-crypt.cpp gpg.cpp sha1.cpp sha256.cpp sha512.cpp hmac.cpp aes-ctr.cpp aead.cpp key.cpp base64.cpp util.cpp commands.cpp
-          if exist git-crypt.exe (
-            mkdir "C:\Program Files\git-crypt" 2>nul
-            move git-crypt.exe "C:\Program Files\git-crypt\git-crypt.exe"
-            echo C:\Program Files\git-crypt>> %GITHUB_PATH%
-          )
-
-      - name: Unlock encrypted source
-        run: |
-          $bytes = [Convert]::FromBase64String("${{ secrets.GIT_CRYPT_KEY }}")
-          [IO.File]::WriteAllBytes("C:\temp\key.bin", $bytes)
-          git-crypt unlock "C:\temp\key.bin"
-          Remove-Item "C:\temp\key.bin"
-
-      - name: Verify decryption
-        run: |
-          $firstLine = Get-Content lib\main.dart -TotalCount 1
-          if ($firstLine -match "import") {
-            Write-Host "Source decrypted successfully"
-          } else {
-            Write-Host "Decryption failed"
-            exit 1
-          }
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
-      - name: Get dependencies
-        run: flutter pub get
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build windows --release --no-tree-shake-icons
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+      - run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "aniwhere-windows-x64.zip"
 
-      - name: Build Windows
-        run: flutter build windows --release --no-tree-shake-icons
-
-      - name: Package artifact
-        run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "aniwhere-windows-x64.zip"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: aniwhere-windows-x64
           path: aniwhere-windows-x64.zip
